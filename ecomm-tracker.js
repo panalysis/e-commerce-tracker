@@ -1,5 +1,4 @@
 ﻿// version 1.0.1 :: 2012-06
-/** @version 1.0.1 */
 
 var _gaq = _gaq || [];
 var wt;
@@ -25,18 +24,12 @@ function trackerInit()
 
    try
    {
-      wt = new WebTracker(config); // set up the tracker
+      wt = new WebTracker(config);
       wt.init();
    }
    catch(err) { }
 };
 
-// ------------------------------------------------------------
-/**
-* @class WebTracker interacts with the core web analytics library to add an abstraction layer to fire events
-* @constructor
-* @param {Object} config Configuration object for the tracker.
-*/
 function WebTracker(config)
 {
    var dh = document.location.hostname,
@@ -192,78 +185,61 @@ WebTracker.prototype._checkCustomVar = function()
 
 };
 
-/**
-* Returns the value for a specified cookie
-* @private
-* @param {String} cookieName. Name of the cookie.
-* @author Panalysis Pty Ltd
-* @version 1.0
-* @return {String} Cookie value
-*/
 WebTracker.prototype._getCookie = function(strParam) {
-   var _ucookies = document.cookie.split(";"),
-         np = [],
-         val = "";
-   for (var i = 0, count = _ucookies.length; i < count; i++) {
-      np = _ucookies[i].split("=");
-      if (this._trim(np[0].toLowerCase()) == strParam.toLowerCase()) {
-         for (var j = 1, npl = np.length; j < npl; j++) {
-            if (j > 1)
+   var dcookies = document.cookie.split(";"),
+       nvp = [],
+       val = "", strParam = strParam || "";
+   
+   for(var i = 0, count = dcookies.length; i < count; i++) {
+      nvp = dcookies[i].split("=");
+      if( nvp[0].toLowerCase().trim()==strParam.toLowerCase() ) {
+         for(var j = 1, npl = nvp.length; j < npl; j++) {
+            if( j>1 )
                val += "=";
 
-            val += np[i];
-         };
-         return decodeURIComponent(this._trim(val));
+            val += nvp[j];
+         }
+         return decodeURIComponent(val.trim());
       };
    }
-   return "";
+   
+   return val;
 };
 
-/**
-* Retrieves the a query parameter from the document hash
-* @private
-* @param {String} strParam The name of the parameter to find.
-* @author Panalysis Pty Ltd
-* @version 1.0
-* @return {String} The query parameter value if found.
-*/
 WebTracker.prototype._getHashParam = function(strParam) {
    if( !strParam )
       return "";
-   var _pstr = document.location.hash.substring(1),
-      _uparams = _pstr.split("&"),
-      _paramlist = {},
-      np = [], hp = "";
-   for (var i = 0, l = _uparams.length; i < l; i++) {
-      np = _uparams[i].split("=");
+   
+   var dochash = document.location.hash.substring(1),
+       hashparams = dochash.split("&"),
+       paramlist = {}, np = [], 
+       hp = "", strParam = strParam || "";
+   
+   for(var i = 0, l = hashparams.length; i < l; i++) {
+      np = hashparams[i].split("=");
       if( np.length==2 ) {
-         _paramlist[this._trim(np[0])] = this._trim(np[1]);
-      };
-      if( !!strParam && this._trim(np[0].toLowerCase())==strParam.toLowerCase() ) {
-         hp = this._trim(np[1]);
+         paramlist[np[0].trim()] = np[1].trim();
+      }
+      if( !!strParam && np[0].toLowerCase().trim()==strParam.toLowerCase() ) {
+         hp = np[1].trim();
          break;
-      };
+      }
    }
+   
    return hp;
 };
 
-/**
-* Retrieves a query parameter from the document URL
-* @private
-* @param {String} strParam The name of the parameter to find.
-* @author Panalysis Pty Ltd
-* @version 1.0
-* @return {String} The query parameter value if found.
-*/
 WebTracker.prototype._getParam = function(strParam) {
-   var _pstr = document.location.search.substring(1),
-      _uparams = _pstr.split("&"),
-      np = [];
-   for (var i = 0, l = _uparams.length; i < l; i++) {
-      np = _uparams[i].split("=");
-      if (this._trim(np[0].toLowerCase()) == strParam.toLowerCase())
-         return this._trim(np[1]);
+   var docsearch = document.location.search.substring(1),
+       qparams = docsearch.split("&"),
+       np = [], strParam = strParam || "";
+   
+   for (var i = 0, l = qparams.length; i < l; i++) {
+      np = qparams[i].split("=");
+      if( np[0].toLowerCase().trim()==strParam.toLowerCase() )
+         return np[1].trim();
    }
+   
    return "";
 };
 
@@ -284,45 +260,24 @@ WebTracker.prototype._loadGaJs = function()
    })();
 };
 
-/**
-* Logs the message to the console if available.
-* @private
-* @param {String} Message to log.
-*/
 WebTracker.prototype._log = function(msg)
 {
    if( typeof(console)!="undefined" && this.debug )
       console.log(msg);
 };
 
-/**
-* Sets a cookie
-* @private
-* @param {String} CookieName the name of the cookie
-* @param {String} Value the value to store in the cookie
-* @param {Date} Expires The time when the cookie will expire
-* @param {String} Domain The domain name for the cookie
-* @author Panalysis Pty Ltd
-* @version 1.0
-* @return void
-*/
 WebTracker.prototype._setCookie = function(cookieName, cookieValue, expire, strDomain) {
    var pdm = "";
-   if (strDomain && strDomain != "")
+   
+   if( !!strDomain )
       pdm = " domain=" + strDomain + ";";
 
-   if ((typeof (expire)) == "object")
+   if( typeof expire=="object" )
       document.cookie = cookieName + "=" + cookieValue + ";expires=" + expire.toGMTString() + "; path=/;" + pdm;
    else
       document.cookie = cookieName + "=" + cookieValue + "; path=/;" + pdm;
 };
 
-/**
-* Sets a custom variable.
-* @public
-* @param {Object} data Data defining the custom variable. Should include slot, name, value, scope.
-* @return void
-*/
 WebTracker.prototype._setCustomVar = function(data)
 {
    var slot = data.slot || 0,
@@ -336,12 +291,6 @@ WebTracker.prototype._setCustomVar = function(data)
       this._log("_setCustomVar: " + slot + ", " + name + ", " + value + ", " + scope);
 };
 
-/**
-* Records a 'Checkout/Complete Checkout' event.
-* @public
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackCheckoutComplete = function()
 {
    var wto = this,
@@ -350,12 +299,6 @@ WebTracker.prototype._trackCheckoutComplete = function()
    wto.trackEvent(category, action);
 };
 
-/**
-* Records a 'Checkout/Start Checkout' event.
-* @public
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackCheckoutStart = function()
 {
    var wto = this,
@@ -364,13 +307,6 @@ WebTracker.prototype._trackCheckoutStart = function()
    wto.trackEvent(category, action);
 };
 
-/**
-* Records a 'Cross Sell' event.
-* @public
-* @param {Object} data Event data object. Should have action and label properties.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackCrossSell = function(data)
 {
    var wto = this,
@@ -380,15 +316,6 @@ WebTracker.prototype._trackCrossSell = function(data)
    wto.trackEvent(category, action, label);
 };
 
-/**
-* Tracks an event in Google analytics.
-* @public
-* @param {Object} data Event data. Should include category, action, label (optional), value (optional).
-* @example
-* // Google Analytics
-* wt._trackEvent({ category: 'category', action: 'action', label: 'label', value: 1});
-* @return void
-*/
 WebTracker.prototype._trackEvent = function(data)
 {
    var category = data.category || "",
@@ -402,13 +329,6 @@ WebTracker.prototype._trackEvent = function(data)
       this._log("_trackEvent: " + category + ", " + action + ", " + label + ", " + value);
 };
 
-/**
-* Records a 'Out of Stock' event.
-* @public
-* @param {Object} data Event data object. Should have action and label properties.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackOutOfStock = function(data)
 {
    var wto = this,
@@ -418,15 +338,6 @@ WebTracker.prototype._trackOutOfStock = function(data)
    wto.trackEvent(category, action, label);
 };
 
-/**
-* Records a page view.
-* @public
-* @param {Object} data Object for the page view in JSON notation (optional)
-* @example
-* // Google Analytics
-* wt.TrackPageview({page:"/my-page-name.html"});
-* @return void
-*/
 WebTracker.prototype._trackPageview = function(data)
 {
    var page = ( !!data )? data.page || "" : "";
@@ -440,12 +351,6 @@ WebTracker.prototype._trackPageview = function(data)
       this._log("_trackPageview: " + page);
 };
 
-/**
-* Records a 'Print Order' event.
-* @public
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackPrintOrder = function()
 {
    var wto = this,
@@ -454,13 +359,6 @@ WebTracker.prototype._trackPrintOrder = function()
    wto.trackEvent(category, action);
 };
 
-/**
-* Records an 'Add to Cart' event.
-* @public
-* @param {Object} data Event data object. Should have action, label and value properties.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackProductAdd = function(data)
 {
    var wto = this,
@@ -470,13 +368,6 @@ WebTracker.prototype._trackProductAdd = function(data)
    wto.trackEvent(category, action, label, value)
 };
 
-/**
-* Records a 'Remove from Cart' event.
-* @public
-* @param {Object} data Event data object. Should have action and label properties.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackProductRemove = function(data)
 {
    var wto = this,
@@ -486,13 +377,6 @@ WebTracker.prototype._trackProductRemove = function(data)
    wto.trackEvent(category, action, label, value);
 };
 
-/**
-* Records a 'Product searches with 0 results' event.
-* @public
-* @param {Object} data Event data object. Should have label property.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackProductSearchNoResults = function(data)
 {
    var wto = this,
@@ -502,13 +386,6 @@ WebTracker.prototype._trackProductSearchNoResults = function(data)
    wto.trackEvent(category, action, label);
 };
 
-/**
-* Records a 'Product search selected sort order' event.
-* @public
-* @param {Object} data Event data object. Should have label property.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackProductSortOrder = function(data)
 {
    var wto = this,
@@ -518,13 +395,6 @@ WebTracker.prototype._trackProductSortOrder = function(data)
    wto.trackEvent(category, action, label);
 };
 
-/**
-* Records a 'View Product' event.
-* @public
-* @param {Object} data Event data object. Should have action and label properties.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackProductView = function(data)
 {
    var wto = this,
@@ -534,13 +404,6 @@ WebTracker.prototype._trackProductView = function(data)
    wto.trackEvent(category, action, label);
 };
 
-/**
-* Records a 'Redeem Coupon' event.
-* @public
-* @param {Object} data Event data object. Should have label property.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackRedeemCoupon = function(data)
 {
    var wto = this,
@@ -550,13 +413,6 @@ WebTracker.prototype._trackRedeemCoupon = function(data)
    wto.trackEvent(category, action, label);
 };
 
-/**
-* Records a 'Search - Add to Cart' event.
-* @public
-* @param {Object} data Event data object. Should have action and label properties.
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackSearchProductAdd = function(data)
 {
    var wto = this,
@@ -566,12 +422,6 @@ WebTracker.prototype._trackSearchProductAdd = function(data)
    wto.trackEvent(category, action, label, value);
 };
 
-/**
-* Records a 'Checkout/View Cart' event.
-* @public
-* @author Panalysis Pty Ltd
-* @version 1.0
-*/
 WebTracker.prototype._trackViewCart = function()
 {
    var wto = this,
@@ -580,14 +430,6 @@ WebTracker.prototype._trackViewCart = function()
    wto.trackEvent(category, action);
 };
 
-/**
-* Trims leading and trailing whitespace
-* @private
-* @param {String} val String value to trim.
-* @author Panalysis Pty Ltd
-* @version 1.0
-* @return {String} Trimmed string.
-*/
 WebTracker.prototype._trim = function(val) 
 {
    return val.replace(/^\s+|\s+$/g, '');
@@ -599,4 +441,17 @@ String.prototype.contains = function(subStr)
    var containsSubStr = false;
    containsSubStr = !( this.indexOf(subStr)<0 );
    return containsSubStr;
+};
+
+String.prototype.trim = function()
+{
+   var trimmedStr = '';
+   
+   try
+   {
+      trimmedStr = this.replace(/^\s+|\s+$/g, '');
+   }
+   catch( err ) {}
+   
+   return trimmedStr;
 };
