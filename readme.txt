@@ -2,13 +2,11 @@ Panalysis e-commerce tracking library
 -------------------------------------
 This JavaScript library is a framework for implementing a system of event tracking for Google Analytics within an e-commerce website.
 
-This tracking library is not complete as is, but offers a framework for implementing tracking of key e-commerce activities.
-To complete the tracking library implementation, you'll need to tag those parts of the website that are involved in those key activities.
+This tracking library is not complete as is, but offers a framework for implementing tracking of key e-commerce activities. To complete the tracking library implementation, you'll need to tag those parts of the website that are involved in those key activities.
 
-Within this framework, the required tagging should happen as part of the init method which should then call any required tagging methods
-that will do that actual work of tagging elements on the page to record events. A few key tagging methods have been included, e.g. tagAddToCart.
+Within this framework, the required tagging should happen as part of the init method which should then call any required tagging methods that will do that actual work of tagging elements on the page to record events. Key tagging methods have been included, e.g. tagAddToCart.
 
-An implementation of the tagAddToCart might look something like the following (where the jQuery object is $j):
+An implementation of the tagAddToCart might look something like the following (where $ is the jQuery object):
 
 WebTracker.prototype.tagAddToCart = function()
 {
@@ -16,20 +14,20 @@ WebTracker.prototype.tagAddToCart = function()
        action = "Not Specified", 
        productInfo = [];
 
-   if( !!$j("h1#product-category").length )
-      action = $j("h1#product-category").text();
+   if( !!$("h1#product-category").length )
+      action = $("h1#product-category").text();
 
-   $j("#add-to-cart-btn").click(function(ev) {
+   $("#add-to-cart-btn").click(function(ev) {
       var data = { Action:action, Label:"", Value:1 };
-      productInfo[0] = $j("span.product-id").text();
-      productInfo[1] = $j("span.product-name").text();
+      productInfo[0] = $("span.product-id").text();
+      productInfo[1] = $("span.product-name").text();
       data.Label = productInfo.join("-");
       
       wto._trackProductAdd(data);
    });
 };
 
-Much tagging is likely conditional to specific parts of the website, so you'll likely have code in the init function such as:
+Much tagging is likely conditional to specific parts of the website, so you'll likely have code in the init function similar to:
 
    if( docpath.contains('/search') )
    {
