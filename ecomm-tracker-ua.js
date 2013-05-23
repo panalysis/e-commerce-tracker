@@ -1,6 +1,5 @@
-﻿// version 1.0.3 :: 2013-05
+﻿// version 1.0.1 :: 2013-05
 
-var _gaq = _gaq || [];
 var wt;
 
 /**
@@ -10,13 +9,14 @@ function trackerInit()
 {
    var config = {
          debug: true,
+         trackerName: "ga",
          gaAccounts: {
 	         prod: 'UA-xxxxxxxx-1',
 	         dev: 'UA-xxxxxxxx-0'
          },
          customvars: {
          },
-         domain: "some.domain.com"
+         domain: "localtest.pc"
       };
 
    try
@@ -34,13 +34,13 @@ function trackerInit()
 * @example
    var config = {
          debug: true,
+         trackerName: "ga",
          gaAccounts: {
 	         prod: 'UA-xxxxxxxx-1',
 	         dev: 'UA-xxxxxxxx-0'
          },
          customvars: {
          },
-         ignoredRefs: [ ignoredreferrer1.com, ignoredreferrer2.com ],
          domain: "some.domain.com"
       };
 */
@@ -56,9 +56,9 @@ function WebTracker(config)
 		         dev: 'UA-xxxxxxxx-0'
 		      },
             debug: false,
+            trackerName: "ga",
             customvars: {},
-		      domain: "website.com",
-            ignoredRefs: []
+		      domain: "website.com"
          };
 
    if( config && typeof config=="object" )
@@ -77,20 +77,14 @@ function WebTracker(config)
    this.domain = domain;
    this.docpath = docpath;
    this.customvars = _config.customvars;
+   this.trackerName = _config.trackerName;
 
-   if( _config.debug ) // configure tracker for debug
+   this._loadAnalyticsJs();
+
+   if( _config.debug && typeof window[_config.trackerName]!='undefined' ) // configure tracker for debug
    {
-      window["_gaq"] = window["_gaq"] || [];
-      _gaq.push(['_setAccount', uaAcc]);
-      _gaq.push(['_setDomainName', domain]);
-
-      if( _config.ignoredRefs.length )
-      {
-         for(var i = 0, count = _config.ignoredRefs.length; i<count; i++)
-         {
-            _gaq.push(['_addIgnoredRef', _config.ignoredRefs[i]]);
-         }
-      }
+      var tracker = window[_config.trackerName];
+      tracker('create', uaAcc, {'cookieDomain': domain});
 
       this.trackPageview();
    }
@@ -111,30 +105,10 @@ WebTracker.prototype.init = function()
        docpath = instance.docpath,
        docref = document.referrer || "";
 
-   instance._loadGaJs();
-   
    // add in tagging initialisation
    jQuery(document).ready(function() {
       
    });
-};
-/**
-* @description Performs a check for indication of banner click (indicated by well-known hash param 'ac') and if found, records event.
-* Should be called during init. Event details: category = "Promo Click".
-* @public
-*/
-WebTracker.prototype.checkBannerClick = function()
-{
-   var instance = this, 
-       docref = document.referrer || "",
-       hp = "";
-   
-   hp = instance._getHashParam('ac');
-   if( hp )
-   {
-      hp = decodeURIComponent(hp);
-      instance.trackEvent("Promo Click", hp, docref);
-   }
 };
 /**
 * @description Performs a check for zero search results. (Should only execute on a search results page.) If a zero search result is found
@@ -168,25 +142,6 @@ WebTracker.prototype.setCustomVar = function(cvName, cvVal)
 * @description Tags elements for add to cart tracking. Appropriate elements should be identified and event handlers added that include
 * call to _trackProductAdd.
 * @public
-* @example
-   WebTracker.prototype.tagAddToCart = function()
-   {
-      var instance = this,
-          action = "Not Specified", 
-          productInfo = [];
-
-      if( !!$("h1#product-category").length )
-         action = $("h1#product-category").text();
-
-      $("#add-to-cart-btn").click(function(ev) {
-         var data = { action:action, label:"", value:1 };
-         productInfo[0] = $("span.product-id").text();
-         productInfo[1] = $("span.product-name").text();
-         data.Label = productInfo.join("-");
-      
-         instance._trackProductAdd(data);
-      });
-   };
 */
 WebTracker.prototype.tagAddToCart = function()
 {
@@ -362,23 +317,22 @@ WebTracker.prototype._getParam = function(strParam) {
    return "";
 };
 /**
-* Loads the ga.js script if it is not already present.
+* Loads the analytics.js script if it is not already present.
 */
-WebTracker.prototype._loadGaJs = function()
+WebTracker.prototype._loadAnalyticsJs = function()
 {
    try {
       var sl = document.getElementsByTagName('script');
       for(var a = 0, slCount = sl.length; a < slCount; a++) {
-         if( sl[a].src.indexOf('google-analytics.com/ga.js') > 0 )
+         if( sl[a].src.indexOf('google-analytics.com/analytics.js') > 0 )
          return;
       }
    } catch (err) { }
    
-   (function () {
-      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-   })();
+   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+   })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 };
 /**
 * Logs the message to the console if available.
@@ -420,7 +374,8 @@ WebTracker.prototype._setCustomVar = function(data)
        value = data.value || "",
        scope = data.scope || 0;
 
-   _gaq.push(['_setCustomVar', slot, name, value, scope]);
+   //_gaq.push(['_setCustomVar', slot, name, value, scope]);
+   // todo: to be replaced with custom dimensions/metrics
 
    if( this.debug )
       this._log("_setCustomVar: " + slot + ", " + name + ", " + value + ", " + scope);
@@ -472,15 +427,19 @@ WebTracker.prototype._trackCrossSell = function(data)
 */
 WebTracker.prototype._trackEvent = function(data)
 {
-   var category = data.category || "",
-       action = data.action || "",
-       label = data.label || "",
-       value = data.value || 0;
+   var instance = this,
+       tracker = window[instance.trackerName],
+       category = data.category || "", action = data.action || "", label = data.label || "", value = data.value || 0;
 
-   _gaq.push(['_trackEvent', category, action, label, value]);
+   tracker('send', 'event', {
+      'eventCategory': category,
+      'eventAction': action,
+      'eventLabel': label,
+      'eventValue': value
+   });
 
    if( this.debug )
-      this._log("_trackEvent: " + category + ", " + action + ", " + label + ", " + value);
+      this._log(">send -> event: " + category + ", " + action + ", " + label + ", " + value);
 };
 /**
 * Records a 'Out of Stock' event. Event details: category = "Out of Stock".
@@ -508,15 +467,17 @@ WebTracker.prototype._trackOutOfStock = function(data)
 */
 WebTracker.prototype._trackPageview = function(data)
 {
-   var page = ( !!data )? data.page || "" : "";
+   var instance = this,
+       tracker = window[instance.trackerName],
+       page = ( !!data )? data.page || "" : "";
    
    if( !!page )
-      _gaq.push(['_trackPageview', page]);
+      tracker('send', 'pageview', { 'page': page });
    else
-      _gaq.push(["_trackPageview"]);
+      tracker('send', 'pageview');
 
    if( this.debug )
-      this._log("_trackPageview: " + page);
+      this._log("send -> pageview: " + page);
 };
 /**
 * @description Records a 'Print Order' event. Event details: category = "Ordering", action = "Print Order".
