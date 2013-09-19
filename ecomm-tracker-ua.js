@@ -188,13 +188,22 @@ WebTracker.prototype.tagSearchResults = function()
 * @param {String} evAction The event action (required).
 * @param {String} evLbl The event label.
 * @param {Integer} evVal The event value.
+* @param {Bool} nonInt true if event should be non-interavtive (won't impact bounce rate).
 * @public
 */
 WebTracker.prototype.trackEvent = function(evCat, evAction, evLbl, evVal)
 {
    var instance = this,
-       evCategory = evCat || "", evAction = evAction || "", evLabel = evLbl || "", evValue = evVal || 0,
-       evData = { category: evCategory, action: evAction, label: evLabel, value: evValue };
+       evCategory = evCat || "", evAction = evAction || "", evLabel = evLbl || "", 
+       evValue = evVal || 0,
+       nonint = ( typeof nonInt!='undefined' )? !!nonInt : false,
+       evData = { 
+         category: evCategory, 
+         action: evAction, 
+         label: evLabel, 
+         value: evValue, 
+         nonint: nonint 
+       };
    
    try{
       instance._trackEvent(evData);
@@ -203,21 +212,21 @@ WebTracker.prototype.trackEvent = function(evCat, evAction, evLbl, evVal)
 /**
 * @description Tracks an event in GA and sets a timeout to navigate to the link href
 * @param {Object} linkEl Object representing a DOM anchor element.
-* @param {Bool} delay true if should set timeout.
 * @param {String} evCat The event category (required).
 * @param {String} evAction The event action (required).
 * @param {String} evLbl The event label.
 * @param {Integer} evVal The event value.
+* @param {Bool} nonInt true if event should be non-interavtive (won't impact bounce rate).
 * @public
 */
-WebTracker.prototype.trackEventTimeout = function(linkEl, delay, evCat, evAction, evLbl, evVal)
+WebTracker.prototype.trackEventTimeout = function(linkEl, evCat, evAction, evLbl, evVal, nonInt)
 {
    var instance = this,
        url = linkEl.href || "";
 
-   instance.trackEvent(evCat, evAction, evLbl, evVal);
+   instance.trackEvent(evCat, evAction, evLbl, evVal, nonInt);
 
-   if( delay && !!url )
+   if( url )
       setTimeout(function(){ document.location.href = url; }, 300);
 };
 /**
@@ -273,48 +282,59 @@ WebTracker.prototype._getCookie = function(strParam) {
 };
 /**
 * Retrieves the a query parameter from the document hash
-* @param {String} strParam The name of the parameter to find.
+* @param {String} paramName The name of the parameter to find.
 * @return {String} The query parameter value if found.
 */
-WebTracker.prototype._getHashParam = function(strParam) {
-   if( !strParam )
-      return "";
+WebTracker.prototype._getHashParam = function(paramName)
+{
+   var paramName = paramName || "", params = "", paramValue = "",
+       paramRePattern = "(?:\\#|\\&){param_name}=([^\\&$]+)",
+       paramRe = null, m = null;
    
-   var dochash = document.location.hash.substring(1),
-       hashparams = dochash.split("&"),
-       paramlist = {}, np = [], 
-       hp = "", strParam = strParam || "";
-   
-   for(var i = 0, l = hashparams.length; i < l; i++) {
-      np = hashparams[i].split("=");
-      if( np.length==2 ) {
-         paramlist[np[0].trim()] = np[1].trim();
-      }
-      if( !!strParam && np[0].toLowerCase().trim()==strParam.toLowerCase() ) {
-         hp = np[1].trim();
-         break;
+   if( paramName )
+   {
+      paramRePattern = paramRePattern.replace("{param_name}", paramName);
+      paramRe = new RegExp(paramRePattern);
+      params = document.location.hash;
+
+      if( paramRe.test(params) )
+      {
+         m = params.match(paramRe);
+         
+         if( m!=null && m.length>1 )
+            paramValue = m[1];
       }
    }
-   
-   return hp;
+
+   return paramValue;
 };
 /**
 * Retrieves a query parameter from the document URL
-* @param {String} strParam The name of the parameter to find.
+* @param {String} paramName The name of the parameter to find.
 * @return {String} The query parameter value if found.
 */
-WebTracker.prototype._getParam = function(strParam) {
-   var docsearch = document.location.search.substring(1),
-       qparams = docsearch.split("&"),
-       np = [], strParam = strParam || "";
+WebTracker.prototype._getParam = function(paramName)
+{
+   var paramName = paramName || "", qs = "", paramValue = "",
+       paramRePattern = "(?:\\?|\\&){param_name}=([^\\&$]+)",
+       paramRe = null, m = null;
    
-   for (var i = 0, l = qparams.length; i < l; i++) {
-      np = qparams[i].split("=");
-      if( np[0].toLowerCase().trim()==strParam.toLowerCase() )
-         return np[1].trim();
+   if( paramName )
+   {
+      paramRePattern = paramRePattern.replace("{param_name}", paramName);
+      paramRe = new RegExp(paramRePattern);
+      qs = document.location.search;
+
+      if( paramRe.test(qs) )
+      {
+         m = qs.match(paramRe);
+         
+         if( m!=null && m.length>1 )
+            paramValue = m[1];
+      }
    }
-   
-   return "";
+
+   return paramValue;
 };
 /**
 * Loads the analytics.js script if it is not already present.
@@ -387,9 +407,14 @@ WebTracker.prototype._setCustomVar = function(data)
 WebTracker.prototype._trackCheckoutComplete = function()
 {
    var instance = this,
-       category = "Checkout", action = "Complete Checkout";
+       category = "Checkout", action = "Complete Checkout",
+       data = {
+         category: category, 
+         action: action, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Checkout/Start Checkout' event. Event details: category = "Checkout", action = "Start Checkout".
@@ -398,9 +423,14 @@ WebTracker.prototype._trackCheckoutComplete = function()
 WebTracker.prototype._trackCheckoutStart = function()
 {
    var instance = this,
-       category = "Checkout", action = "Start Checkout";
+       category = "Checkout", action = "Start Checkout",
+       data = {
+         category: category, 
+         action: action, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Cross Sell' event. e.g. a click on a related product item featured on an origin product page.
@@ -413,9 +443,15 @@ WebTracker.prototype._trackCrossSell = function(data)
 {
    var instance = this,
        category = "Cross Sell", action = data.action || "",
-       label = data.label || "";
+       label = data.label || "",
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label);
+   instance._trackEvent(data);
 };
 /**
 * Tracks an event in Google analytics.
@@ -429,17 +465,19 @@ WebTracker.prototype._trackEvent = function(data)
 {
    var instance = this,
        tracker = window[instance.trackerName],
-       category = data.category || "", action = data.action || "", label = data.label || "", value = data.value || 0;
+       category = data.category || "", action = data.action || "", label = data.label || "", value = data.value || 0
+       nonint = ( typeof data.nonint!='undefined' )? !!data.nonint : false;
 
    tracker('send', 'event', {
       'eventCategory': category,
       'eventAction': action,
       'eventLabel': label,
-      'eventValue': value
+      'eventValue': value,
+      'nonInteraction': nonint
    });
 
    if( this.debug )
-      this._log(">send -> event: " + category + ", " + action + ", " + label + ", " + value);
+      this._log(">send -> event: " + category + "--" + action + "--" + label + "--" + value + "--" + nonint);
 };
 /**
 * Records a 'Out of Stock' event. Event details: category = "Out of Stock".
@@ -453,9 +491,15 @@ WebTracker.prototype._trackOutOfStock = function(data)
 {
    var instance = this,
        category = "Out of Stock", action = data.action || "",
-       label = data.label || "";
+       label = data.label || "",
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label);
+   instance._trackEvent(data);
 };
 /**
 * Records a page view.
@@ -486,9 +530,14 @@ WebTracker.prototype._trackPageview = function(data)
 WebTracker.prototype._trackPrintOrder = function()
 {
    var instance = this,
-       category = "Ordering", action = "Print Order";
+       category = "Ordering", action = "Print Order",
+       data = {
+         category: category, 
+         action: action, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action);
+   instance._trackEvent(data);
 };
 /**
 * Records an 'Add to Cart' event. Event details: category = "Add to Cart".
@@ -501,9 +550,16 @@ WebTracker.prototype._trackProductAdd = function(data)
 {
    var instance = this,
        category = "Add to Cart", 
-       action = data.action || "", label = data.label || "", value = data.value || 0;
+       action = data.action || "", label = data.label || "", value = data.value || 0,
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         value: value,
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label, value)
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Remove from Cart' event. Event details: category = "Remove from Cart".
@@ -516,9 +572,16 @@ WebTracker.prototype._trackProductRemove = function(data)
 {
    var instance = this,
        category = "Remove from Cart", 
-       action = data.action || "", label = data.label || "", value = data.value || 0;
+       action = data.action || "", label = data.label || "", value = data.value || 0,
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         value: value,
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label, value);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Product searches with 0 results' event. Event details: category = "Product Search", action = "Searches with 0 Results".
@@ -531,9 +594,15 @@ WebTracker.prototype._trackProductSearchNoResults = function(data)
 {
    var instance = this,
        category = "Product Search", action = "Searches with 0 Results",
-       label = data.label || "";
+       label = data.label || "",
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Product search selected sort order' event. Event details: category = "Product Search", action = "Search Result Sort Order".
@@ -547,9 +616,15 @@ WebTracker.prototype._trackProductSortOrder = function(data)
 {
    var instance = this,
        category = "Product Search", action = "Search Result Sort Order",
-       label = data.label || "";
+       label = data.label || "",
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'View Product' event. Event details: category = "View Product". Should be recorded on a product detail page.
@@ -562,9 +637,15 @@ WebTracker.prototype._trackProductView = function(data)
 {
    var instance = this,
        category = "View Product", 
-       action = data.action || "", label = data.label || "";
+       action = data.action || "", label = data.label || "",
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Redeem Coupon' event. Event details: category = "Checkout", action = "Redeem Coupon".
@@ -578,9 +659,15 @@ WebTracker.prototype._trackRedeemCoupon = function(data)
 {
    var instance = this,
        category = "Checkout", action = "Redeem Coupon",
-       label = data.label || "";
+       label = data.label || "",
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Search - Add to Cart' event. Event category = "Search - Add to Cart".
@@ -593,9 +680,16 @@ WebTracker.prototype._trackSearchProductAdd = function(data)
 {
    var instance = this,
        category = "Search - Add to Cart", 
-       action = data.action || "", label = data.label || "", value = data.value || 0;
+       action = data.action || "", label = data.label || "", value = data.value || 0,
+       data = {
+         category: category, 
+         action: action, 
+         label: label, 
+         value: value,
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action, label, value);
+   instance._trackEvent(data);
 };
 /**
 * Records a 'Checkout/View Cart' event. Event details: category = "Checkout", action = "View Cart".
@@ -605,9 +699,14 @@ WebTracker.prototype._trackSearchProductAdd = function(data)
 WebTracker.prototype._trackViewCart = function()
 {
    var instance = this,
-       category = "Checkout", action = "View Cart";
+       category = "Checkout", action = "View Cart",
+       data = {
+         category: category, 
+         action: action, 
+         nonint: true 
+       };
 
-   instance.trackEvent(category, action);
+   instance._trackEvent(data);
 };
 
 // native extensions
